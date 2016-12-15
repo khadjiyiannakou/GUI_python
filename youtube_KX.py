@@ -8,6 +8,10 @@ import sys
 import time
 import json
 
+def noYoutube_dl():
+    QMessageBox.critical(self,'Aborting','youtube-dl has not been found please install it \n using "sudo pip install youtube_dl"')
+    sys.exit(-1)
+
 def which(program):
     def is_exe(fpath):
         return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
@@ -61,6 +65,16 @@ class Window(QWidget):
         Layout.addWidget(self.B_cln_url)
         self.B_cln_url.clicked.connect(self.clearList)
 
+        self.B_dmp_list = QPushButton("Dump list to file")
+        self.B_dmp_list.setStyleSheet('QPushButton {background-color: #A3C1DA; color: red;}')
+        Layout.addWidget(self.B_dmp_list)
+        self.B_dmp_list.clicked.connect(self.write_file_list)
+
+        self.B_rd_list = QPushButton("Read list from file")
+        self.B_rd_list.setStyleSheet('QPushButton {background-color: #A3C1DA; color: red;}')
+        Layout.addWidget(self.B_rd_list)
+        self.B_rd_list.clicked.connect(self.read_file_list)
+
         Layout.addWidget(QLabel("Choose quality to download from youtube"))
         self.CB_qlt=QComboBox(self)
         Layout.addWidget(self.CB_qlt)
@@ -71,6 +85,7 @@ class Window(QWidget):
 
         Layout.addWidget(QLabel("Do you want to convert downloaded files to mp3?"))
         self.ChB_mp3=QCheckBox(self)
+#        self.ChB_mp3.setCheckState(Qt.Checked)
         Layout.addWidget(self.ChB_mp3)
         self.cnvrt_mp3=False
         self.ChB_mp3.clicked.connect(self.set_cnvrt_mp3)
@@ -87,7 +102,7 @@ class Window(QWidget):
         self.step = 0
         self.count = 0
         self.B_dwnld = QPushButton("Download")
-        self.B_dwnld.setStyleSheet('QPushButton {background-color: #A3C1DA; color: red;}')
+        self.B_dwnld.setStyleSheet('QPushButton {background-color: green; color: black;}')
         Layout.addWidget(self.B_dwnld)
         Layout.addWidget(self.pbar)
         self.B_dwnld.clicked.connect(self.doAction)
@@ -105,7 +120,6 @@ class Window(QWidget):
             return
         else:
             self.lmusic.append(name)
-#            QMessageBox.information(self, "Success", "url added")
     def extractPlaylist(self):
         name = self.Input_plst.text()
         self.Input_plst.clear()
@@ -124,9 +138,7 @@ class Window(QWidget):
                 if i:
                     self.lmusic.append(prefix + json.loads(i)['url'])
         else:
-            QMessageBox.critical(self,'Aborting','youtube-dl has not been found please install it')
-            sys.exit(-1)
-        
+            noYoutube_dl()
     def showList(self):
         string=''
         for i,x in enumerate(self.lmusic): string += '(%d) %s\n' % (i+1,x)
@@ -139,26 +151,43 @@ class Window(QWidget):
         if self.timer.isActive():
             self.timer.stop()
             self.B_dwnld.setText('Start')
+            self.B_dwnld.setStyleSheet('QPushButton {background-color: green; color: black;}')
         else:
             self.timer.start(100,self)
             self.B_dwnld.setText('Stop')
+            self.B_dwnld.setStyleSheet('QPushButton {background-color: red; color: black;}')
+                    
 
     def timerEvent(self,e):
         if self.count == (len(self.lmusic)) or len(self.lmusic) == 0:
             self.timer.stop()
             self.B_dwnld.setText('Download')
+            self.B_dwnld.setStyleSheet('QPushButton {background-color: green; color: black;}')
             self.step=0
             self.count=0
             return
+        self.step = self.step + round(100./len(self.lmusic),3)
         self.youtube_dl(self.lmusic[self.count])
         self.count += 1
-        self.step = self.step + round(100./len(self.lmusic),3)
         self.pbar.setValue(self.step)
 
     def set_download_quality(self,qlt):
         self.yt_qlt = qlt
     def set_cnvrt_mp3(self,tick):
         self.cnvrt_mp3 = tick
+
+    def write_file_list(self):
+        fileName,state = QFileDialog.getSaveFileName(self, 'Choose File ', os.path.curdir)
+        if fileName:
+            with open(fileName,"w") as fp:
+                for name in self.lmusic: fp.write('%s\n' % (name))
+
+    def read_file_list(self):
+        fileName,state = QFileDialog.getOpenFileName(self, 'Open File ', os.path.curdir)
+        if fileName:
+            with open(fileName, "r") as fp:
+                for line in fp:
+                    self.lmusic.append(line.strip('\n'))
         
     def find_directory(self):
         self.dialog = QFileDialog()
@@ -183,8 +212,7 @@ class Window(QWidget):
             if rc != 0:
                 QMessageBox.warning(self,'Warning', 'youtube-dl exited with error \n %s' % (output.decode()))
         else:
-            QMessageBox.critical(self,'Aborting','youtube-dl has not been found please install it')
-            sys.exit(-1)
+            noYoutube_dl()
 if __name__ == '__main__':
     import sys
     global app
