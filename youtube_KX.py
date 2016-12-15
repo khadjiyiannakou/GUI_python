@@ -81,6 +81,7 @@ class Window(QWidget):
         self.yt_qlt='171' # default value for the quality
         self.CB_qlt.addItem("171")
         self.CB_qlt.addItem("249")
+        self.CB_qlt.addItem("Highest")
         self.CB_qlt.activated[str].connect(self.set_download_quality)
 
         Layout.addWidget(QLabel("Do you want to convert downloaded files to mp3?"))
@@ -203,8 +204,12 @@ class Window(QWidget):
         else:
             convertMP3 = ''
         pathOut = '--output "%s/%%(title)s.%%(ext)s"' % (self.dir_dwnld)
+        if self.yt_qlt.isdigit():
+            quality = '--format %s' % self.yt_qlt
+        else:
+            quality = ''
         if yt_dl_bin:
-            exec_comm = '%s --format %s %s %s "%s"' % (yt_dl_bin,self.yt_qlt,convertMP3,pathOut,name)
+            exec_comm = '%s %s %s %s "%s"' % (yt_dl_bin,quality,convertMP3,pathOut,name)
             p = subprocess.Popen(exec_comm, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             app.processEvents()
             output,err = p.communicate()
