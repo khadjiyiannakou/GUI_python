@@ -222,7 +222,7 @@ if __name__ == '__main__':
     import sys
     global app
     app = QApplication(sys.argv)
-    app.setWindowIcon(QIcon('icon/youtube.png'))
+#    app.setWindowIcon(QIcon('icon/youtube.png'))
     screen = Window()
     screen.show()
     sys.exit(app.exec_())
